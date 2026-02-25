@@ -2,22 +2,19 @@
 #include <RTClib.h>
 #include <LiquidCrystal_I2C.h>
 
-// Initialize the RTC and LCD objects
-RTC_DS3231 rtc;
-
-// Change 0x27 to your LCD's address if the scanner showed something different (e.g., 0x3F)
-// Parameters: address, columns, rows (assumes a 16x2 LCD)
+// Initialize the DS1307 RTC and LCD objects
+RTC_DS1307 rtc;
 LiquidCrystal_I2C lcd(0x27, 16, 2); 
 
 void setup() {
   Serial.begin(115200);
-  Wire.begin(); // Join I2C bus
+  Wire.begin(); 
 
   // Initialize LCD
-  lcd.init();
+  lcd.begin();      
   lcd.backlight();
   lcd.setCursor(0, 0);
-  lcd.print("System Booting...");
+  lcd.print("System Booting..");
 
   // Initialize RTC
   if (!rtc.begin()) {
@@ -27,9 +24,9 @@ void setup() {
     while (1) delay(10); // Halt execution
   }
 
-  // If the RTC lost power, set it to the time the sketch was compiled
-  if (rtc.lostPower()) {
-    Serial.println("RTC lost power, setting time...");
+  // If the RTC is not running, set it to the time the sketch was compiled
+  if (!rtc.isrunning()) {
+    Serial.println("RTC is NOT running, setting time...");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
   
@@ -39,7 +36,6 @@ void setup() {
 
 void loop() {
   DateTime now = rtc.now();
-  float currentTemp = rtc.getTemperature();
 
   // --- 1. Print Data to Serial Monitor ---
   Serial.print("Date: ");
@@ -54,15 +50,22 @@ void loop() {
   Serial.print(':');
   Serial.print(now.minute(), DEC);
   Serial.print(':');
-  Serial.print(now.second(), DEC);
-  
-  Serial.print(" | Temp: ");
-  Serial.print(currentTemp);
-  Serial.println(" C");
+  Serial.println(now.second(), DEC);
 
   // --- 2. Print Data to LCD Display ---
-  // Row 0: Time
+  // Row 0: Date
   lcd.setCursor(0, 0);
+  lcd.print("Date: ");
+  lcd.print(now.year(), DEC);
+  lcd.print('/');
+  if(now.month() < 10) lcd.print('0');
+  lcd.print(now.month(), DEC);
+  lcd.print('/');
+  if(now.day() < 10) lcd.print('0');
+  lcd.print(now.day(), DEC);
+
+  // Row 1: Time
+  lcd.setCursor(0, 1);
   lcd.print("Time: ");
   if(now.hour() < 10) lcd.print('0');
   lcd.print(now.hour(), DEC);
@@ -73,11 +76,8 @@ void loop() {
   if(now.second() < 10) lcd.print('0');
   lcd.print(now.second(), DEC);
 
-  // Row 1: Temperature
-  lcd.setCursor(0, 1);
-  lcd.print("Temp: ");
-  lcd.print(currentTemp);
-  lcd.print(" C  "); // Extra spaces to clear trailing characters
-
-  delay(1000); // Wait 1 second before updating again
+  delay(1000);
 }
+
+
+//YASMEN GUMAMA
